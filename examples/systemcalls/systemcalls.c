@@ -9,15 +9,14 @@
 */
 bool do_system(const char *cmd)
 {
+    int status = system(cmd);
+    if(-1 == status)
+    {
+        perror("system");
+        return false;
+    }
 
-/*
- * TODO  add your code here
- *  Call the system() function with the command set in the cmd
- *   and return a boolean true if the system() call completed with success
- *   or false() if it returned a failure
-*/
-
-    return true;
+    return (0 == status);
 }
 
 /**
@@ -45,21 +44,37 @@ bool do_exec(int count, ...)
         command[i] = va_arg(args, char *);
     }
     command[count] = NULL;
-    // this line is to avoid a compile warning before your implementation is complete
-    // and may be removed
-    command[count] = command[count];
-
-/*
- * TODO:
- *   Execute a system command by calling fork, execv(),
- *   and wait instead of system (see LSP page 161).
- *   Use the command[0] as the full path to the command to execute
- *   (first argument to execv), and use the remaining arguments
- *   as second argument to the execv() command.
- *
-*/
-
     va_end(args);
+
+    pid_t pid = fork();
+    if(-1 == pid)
+    {
+        perror("fork");
+        return false;
+    }
+    if(0 == pid)
+    {
+        // In the child process: execute the command
+        execv(command[0], command);
+        
+        // If execv returns, an error occured
+        perror(execv);
+        exit(1);
+    }
+    else
+    {
+        // In the parent process: wait for the child to finish
+        int status;
+        if(-1 == waitpid(pid, &status, 0))
+        {
+            perror("waitpid");
+            return false;
+        }
+        if(!WIFEXITED(status) || 0 != WEXITSTATUS(status))
+        {
+            return false;
+        }
+    }
 
     return true;
 }
@@ -80,20 +95,50 @@ bool do_exec_redirect(const char *outputfile, int count, ...)
         command[i] = va_arg(args, char *);
     }
     command[count] = NULL;
-    // this line is to avoid a compile warning before your implementation is complete
-    // and may be removed
-    command[count] = command[count];
-
-
-/*
- * TODO
- *   Call execv, but first using https://stackoverflow.com/a/13784315/1446624 as a refernce,
- *   redirect standard out to a file specified by outputfile.
- *   The rest of the behaviour is same as do_exec()
- *
-*/
-
     va_end(args);
+
+    int fd = creat(outputfile, S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
+    if(-1 == fd)
+    {
+        perror("open");
+        return false;
+    }
+
+    pid_t pid = fork();
+    if(-1 == pid)
+    {
+        perror("fork");
+        close(fd);
+        return false;
+    }
+    if(0 == pid)
+    {
+        // In the child process: redirect standard output to the file
+        if (-1 == dup2(fd, STDOUT_FILENO))
+        {
+            perror("dup2");
+            exit(1);
+        }
+        close(fd);
+        execv(command[0], command);
+        // If execv returns, an error occured
+        perror("execv");
+        exit(1);
+    }
+    else
+    {
+        close(fd);
+        int status;
+        if(-1 == waitpid(pid, &status, 0))
+        {
+            perror("waitpid");
+            return false;
+        }
+        if (!WIFEXITED(status) || 0 != WEXITSTATUS(status))
+        {
+            return false;
+        }
+    }
 
     return true;
 }
