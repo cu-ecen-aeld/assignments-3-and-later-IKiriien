@@ -1,6 +1,6 @@
 #!/bin/bash
 # Script outline to install and build kernel.
-# Author: Siddhant Jajoo.
+# Author: Ievgen Kiriienko.
 
 set -e
 set -u
@@ -10,8 +10,8 @@ KERNEL_REPO=git://git.kernel.org/pub/scm/linux/kernel/git/stable/linux-stable.gi
 KERNEL_VERSION=v5.15.163
 BUSYBOX_VERSION=1_33_1
 FINDER_APP_DIR=$(realpath $(dirname $0))
-export ARCH=arm64
-export CROSS_COMPILE=aarch64-none-linux-gnu-
+ARCH=arm64
+CROSS_COMPILE=aarch64-none-linux-gnu-
 
 if [ $# -lt 1 ]
 then
@@ -39,8 +39,8 @@ if [ ! -e ${OUTDIR}/linux-stable/arch/${ARCH}/boot/Image ]; then
 
     echo "Build the kernel"
     make mrproper
-    make defconfig
-    make -j$(nproc)
+    make ARCH=${ARCH} CROSS_COMPILE=${CROSS_COMPILE} defconfig
+    make ARCH=${ARCH} CROSS_COMPILE=${CROSS_COMPILE} -j$(nproc)
     cp arch/${ARCH}/boot/Image ${OUTDIR}
 fi
 
@@ -59,21 +59,20 @@ mkdir -p ${OUTDIR}/rootfs/{bin,dev,etc,home,lib,lib64,proc,sbin,sys,tmp,usr,var}
 mkdir -p ${OUTDIR}/rootfs/{usr/bin,usr/lib,usr/sbin,var/log}
 
 cd "$OUTDIR"
-if [ ! -d "${OUTDIR}/busybox" ]
-then
-git clone git://busybox.net/busybox.git
+if [ ! -d "${OUTDIR}/busybox" ]; then
+	git clone git://busybox.net/busybox.git --depth 1 --single-branch --branch ${BUSYBOX_VERSION}
     cd busybox
     git checkout ${BUSYBOX_VERSION}
     echo "Configure busybox"
 	make distclean
-	make defconfig
+	make ARCH=${ARCH} CROSS_COMPILE=${CROSS_COMPILE} defconfig
 else
     cd busybox
 fi
 
 echo "Make and install busybox"
-make -j$(nproc)
-make CONFIG_PREFIX=${OUTDIR}/rootfs install
+make ARCH=${ARCH} CROSS_COMPILE=${CROSS_COMPILE} -j$(nproc)
+make ARCH=${ARCH} CROSS_COMPILE=${CROSS_COMPILE} CONFIG_PREFIX=${OUTDIR}/rootfs install
 
 echo "Library dependencies"
 ${CROSS_COMPILE}readelf -a ${OUTDIR}/rootfs/bin/busybox | grep "program interpreter"
@@ -92,7 +91,7 @@ sudo mknod -m 600 ${OUTDIR}/rootfs/dev/console c 5 1
 echo "Clean and build the writer utility"
 cd ${FINDER_APP_DIR}
 make clean
-make
+make ARCH=${ARCH} CROSS_COMPILE=${CROSS_COMPILE}
 
 echo "Copying finder related scripts and executables to the rootfs/home"
 sudo cp finder.sh ${OUTDIR}/rootfs/home/

@@ -1,4 +1,10 @@
 #include "systemcalls.h"
+#include <sys/types.h>
+#include <sys/wait.h>
+#include <sys/stat.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <fcntl.h>
 
 /**
  * @param cmd the command to execute with system()
@@ -58,7 +64,7 @@ bool do_exec(int count, ...)
         execv(command[0], command);
         
         // If execv returns, an error occured
-        perror(execv);
+        perror("execv");
         exit(1);
     }
     else
