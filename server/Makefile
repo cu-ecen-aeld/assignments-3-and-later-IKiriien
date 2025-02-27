@@ -1,5 +1,5 @@
 CC := $(CROSS_COMPILE)gcc
-CFLAGS := -Wall -Wextra -Werror -std=gnu11
+CFLAGS := -Wall -Wextra -Werror
 
 all: default
 
