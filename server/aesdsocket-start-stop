@@ -2,7 +2,7 @@
 case "$1" in
     start)
         echo -n "Starting aesdsocketd: "
-        if start-stop-daemon -S -n aesdsocketd -a /usr/bin/aesdsocket -- -d; then
+        if start-stop-daemon -S -n aesdsocket -a /usr/bin/aesdsocket -- -d; then
             echo "OK"
         else
             echo "failed"
@@ -10,7 +10,7 @@ case "$1" in
         ;;
     stop)
         echo -n "Stopping aesdsocketd: "
-        if start-stop-daemon -K -n aesdsocketd; then
+        if start-stop-daemon -K -n aesdsocket; then
             echo "OK"
         else
             echo "failed"
