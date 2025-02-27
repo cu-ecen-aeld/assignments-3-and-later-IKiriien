@@ -1,16 +1,25 @@
 #!/bin/sh
 case "$1" in
-	start)
-		echo "Starting aesdsocket"
-		start-stop-daemon -S -n aesdsocketd -a /usr/bin/aesdsocket -- -d
-		;;
-	stop)
-		echo "Stopping aesdsocket"
-		start-stop-daemon -K -n aesdsocketd
-		;;
-	*)
-		echo "Usage: $0 {start|stop}"
-	exit 1
+    start)
+        echo -n "Starting aesdsocketd: "
+        if start-stop-daemon -S -n aesdsocketd -a /usr/bin/aesdsocket -- -d; then
+            echo "OK"
+        else
+            echo "failed"
+        fi
+        ;;
+    stop)
+        echo -n "Stopping aesdsocketd: "
+        if start-stop-daemon -K -n aesdsocketd; then
+            echo "OK"
+        else
+            echo "failed"
+        fi
+        ;;
+    *)
+        echo "Usage: $0 {start|stop}"
+        exit 1
+        ;;
 esac
 
 exit 0
